@@ -126,10 +126,14 @@
     }
 
     // ---------- WebSocket signaling ----------
+    let leavingCall = false;
+    let reconnectAttempts = 0;
+
     function connectSocket() {
         socket = new WebSocket(`${WS_SCHEME}://${window.location.host}/ws/room/${ROOM_CODE}/`);
 
         socket.onopen = () => {
+            reconnectAttempts = 0;
             send({ type: "join", client_id: CLIENT_ID, name: displayName });
         };
 
@@ -160,7 +164,13 @@
         };
 
         socket.onclose = () => {
-            // connection closed (e.g. after leaving)
+            if (leavingCall) return;
+            // Reconnect (e.g. the host spun back up after being idle) and
+            // re-announce ourselves so peers who joined while we were
+            // disconnected can still see us.
+            const delay = Math.min(1000 * 2 ** reconnectAttempts, 10000);
+            reconnectAttempts++;
+            setTimeout(connectSocket, delay);
         };
     }
 
@@ -203,7 +213,12 @@
 
     // New peer announced itself -> we (existing peer) create an offer to them
     async function handlePeerJoin(peerId, name) {
-        if (peers[peerId]) return;
+        if (peers[peerId]) {
+            // Peer re-announced itself (e.g. it reconnected after a drop) -
+            // tear down the stale connection and renegotiate from scratch.
+            if (peers[peerId].pc) peers[peerId].pc.close();
+            removeTile(peerId);
+        }
         peers[peerId] = { pc: null, videoEl: null, name };
         const pc = createPeerConnection(peerId);
         peers[peerId].pc = pc;
@@ -309,6 +324,7 @@
     }
 
     leaveBtn.addEventListener("click", () => {
+        leavingCall = true;
         send({ type: "leave", client_id: CLIENT_ID });
         Object.values(peers).forEach(p => p.pc && p.pc.close());
         if (localStream) localStream.getTracks().forEach(t => t.stop());
