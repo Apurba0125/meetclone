@@ -19,10 +19,41 @@
                 <button id="preview-cam-btn" class="icon-btn active">📷</button>
             </div>
             <input type="text" id="display-name-input" placeholder="Your name" value="{{ display_name }}">
+
+            <div id="password-field" class="password-field hidden">
+                <input type="password" id="password-input" placeholder="Meeting password">
+                <p id="password-error" class="field-error hidden">Incorrect password.</p>
+            </div>
+
             <button id="join-btn" class="btn btn-primary join-btn">Join now</button>
             <p class="room-code-hint">Room code: <strong>{{ room_code }}</strong></p>
+
+            {% if is_host %}
+            <div id="host-settings" class="host-settings">
+                <h3>Meeting settings (host only)</h3>
+                <label class="checkbox-row">
+                    <input type="checkbox" id="require-approval-checkbox" {% if require_approval %}checked{% endif %}>
+                    Require host approval to join
+                </label>
+                <input type="password" id="host-password-input" placeholder="Set a meeting password (optional)">
+                <button id="save-settings-btn" class="btn btn-secondary small">Save settings</button>
+                <p id="settings-saved-msg" class="field-hint hidden">Saved.</p>
+            </div>
+            {% endif %}
         </div>
     </div>
+
+    <!-- Waiting-for-approval screen -->
+    <div id="waiting-screen" class="prejoin-screen hidden">
+        <div class="prejoin-card">
+            <h2 id="waiting-title">Waiting for the host to let you in&hellip;</h2>
+            <p class="room-code-hint">The host has been notified. This page will continue automatically once you're admitted.</p>
+            <a href="/" class="btn btn-secondary" style="display:inline-block;margin-top:16px;">Cancel</a>
+        </div>
+    </div>
+
+    <!-- Join requests (host only) -->
+    <div id="join-requests" class="join-requests"></div>
 
     <!-- Main call screen -->
     <div id="call-screen" class="call-screen" style="display:none;">
@@ -59,6 +90,10 @@
     <script>
         window.ROOM_CODE = "{{ room_code }}";
         window.WS_SCHEME = window.location.protocol === "https:" ? "wss" : "ws";
+        window.IS_HOST = {{ is_host|yesno:"true,false" }};
+        window.REQUIRE_APPROVAL = {{ require_approval|yesno:"true,false" }};
+        window.HAS_PASSWORD = {{ has_password|yesno:"true,false" }};
+        window.CSRF_TOKEN = "{{ csrf_token }}";
     </script>
     <script src="{% static 'rooms/js/room.js' %}"></script>
 </body>

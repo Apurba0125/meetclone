@@ -2,6 +2,11 @@
     const ROOM_CODE = window.ROOM_CODE;
     const WS_SCHEME = window.WS_SCHEME;
     const CLIENT_ID = Math.random().toString(36).slice(2, 10);
+    const IS_HOST = window.IS_HOST;
+    const CSRF_TOKEN = window.CSRF_TOKEN;
+    let requireApproval = window.REQUIRE_APPROVAL;
+    let hasPassword = window.HAS_PASSWORD;
+    let awaitingApproval = false;
 
     const ICE_SERVERS = [
         { urls: "stun:stun.l.google.com:19302" },
@@ -39,12 +44,61 @@
 
     // ---------- DOM refs ----------
     const prejoinScreen = document.getElementById("prejoin-screen");
+    const waitingScreen = document.getElementById("waiting-screen");
     const callScreen = document.getElementById("call-screen");
     const previewVideo = document.getElementById("preview-video");
     const previewMicBtn = document.getElementById("preview-mic-btn");
     const previewCamBtn = document.getElementById("preview-cam-btn");
     const displayNameInput = document.getElementById("display-name-input");
     const joinBtn = document.getElementById("join-btn");
+    const joinRequestsContainer = document.getElementById("join-requests");
+
+    const passwordField = document.getElementById("password-field");
+    const passwordInput = document.getElementById("password-input");
+    const passwordError = document.getElementById("password-error");
+
+    if (hasPassword && !IS_HOST) passwordField.classList.remove("hidden");
+
+    if (IS_HOST) {
+        const requireApprovalCheckbox = document.getElementById("require-approval-checkbox");
+        const hostPasswordInput = document.getElementById("host-password-input");
+        const saveSettingsBtn = document.getElementById("save-settings-btn");
+        const settingsSavedMsg = document.getElementById("settings-saved-msg");
+
+        saveSettingsBtn.addEventListener("click", async () => {
+            const resp = await fetch(`/room/${ROOM_CODE}/settings/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": CSRF_TOKEN,
+                },
+                body: new URLSearchParams({
+                    require_approval: requireApprovalCheckbox.checked ? "true" : "false",
+                    password: hostPasswordInput.value,
+                }),
+            });
+            const data = await resp.json();
+            if (data.ok) {
+                requireApproval = data.require_approval;
+                hasPassword = data.has_password;
+                hostPasswordInput.value = "";
+                settingsSavedMsg.classList.remove("hidden");
+                setTimeout(() => settingsSavedMsg.classList.add("hidden"), 2000);
+            }
+        });
+    }
+
+    async function verifyPassword(password) {
+        const resp = await fetch(`/room/${ROOM_CODE}/verify-password/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": CSRF_TOKEN,
+            },
+            body: new URLSearchParams({ password: password || "" }),
+        });
+        return resp.json();
+    }
 
     const videoGrid = document.getElementById("video-grid");
     const micBtn = document.getElementById("mic-btn");
@@ -84,15 +138,88 @@
         previewCamBtn.classList.toggle("active", camOn);
     });
 
-    joinBtn.addEventListener("click", () => {
+    joinBtn.addEventListener("click", async () => {
         displayName = displayNameInput.value.trim() || "Guest";
+
+        if (!IS_HOST) {
+            joinBtn.disabled = true;
+            const result = await verifyPassword(passwordInput.value);
+            joinBtn.disabled = false;
+            if (!result.ok) {
+                passwordField.classList.remove("hidden");
+                passwordError.classList.remove("hidden");
+                return;
+            }
+        }
+        passwordError.classList.add("hidden");
+
+        if (requireApproval && !IS_HOST) {
+            awaitingApproval = true;
+            prejoinScreen.style.display = "none";
+            waitingScreen.style.display = "flex";
+            connectSocket();
+        } else {
+            enterCall();
+        }
+    });
+
+    function enterCall() {
         prejoinScreen.style.display = "none";
+        waitingScreen.style.display = "none";
         callScreen.style.display = "flex";
         micBtn.classList.toggle("active", micOn);
         camBtn.classList.toggle("active", camOn);
         addLocalTile();
-        connectSocket();
-    });
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            send({ type: "join", client_id: CLIENT_ID, name: displayName });
+        } else {
+            connectSocket();
+        }
+    }
+
+    function showJoinRequest(peerId, name) {
+        if (document.getElementById(`joinreq-${peerId}`)) return;
+        const row = document.createElement("div");
+        row.className = "join-request-row";
+        row.id = `joinreq-${peerId}`;
+
+        const label = document.createElement("span");
+        label.textContent = `${name || "Guest"} wants to join`;
+
+        const acceptBtn = document.createElement("button");
+        acceptBtn.className = "btn btn-primary small";
+        acceptBtn.textContent = "Admit";
+        acceptBtn.addEventListener("click", () => {
+            send({ type: "join-response", client_id: CLIENT_ID, target: peerId, accepted: true });
+            row.remove();
+        });
+
+        const denyBtn = document.createElement("button");
+        denyBtn.className = "btn btn-secondary small";
+        denyBtn.textContent = "Deny";
+        denyBtn.addEventListener("click", () => {
+            send({ type: "join-response", client_id: CLIENT_ID, target: peerId, accepted: false });
+            row.remove();
+        });
+
+        row.appendChild(label);
+        row.appendChild(acceptBtn);
+        row.appendChild(denyBtn);
+        joinRequestsContainer.appendChild(row);
+    }
+
+    function handleJoinResponse(accepted) {
+        if (!awaitingApproval) return;
+        awaitingApproval = false;
+        if (accepted) {
+            enterCall();
+        } else {
+            document.getElementById("waiting-title").textContent = "The host declined your request to join.";
+            leavingCall = true;
+            if (socket) socket.close();
+            if (localStream) localStream.getTracks().forEach(t => t.stop());
+        }
+    }
 
     // ---------- Video grid helpers ----------
     function makeTile(id, isLocal, name) {
@@ -134,7 +261,11 @@
 
         socket.onopen = () => {
             reconnectAttempts = 0;
-            send({ type: "join", client_id: CLIENT_ID, name: displayName });
+            if (awaitingApproval) {
+                send({ type: "join-request", client_id: CLIENT_ID, name: displayName });
+            } else {
+                send({ type: "join", client_id: CLIENT_ID, name: displayName });
+            }
         };
 
         socket.onmessage = async (event) => {
@@ -159,6 +290,12 @@
                     break;
                 case "chat":
                     appendChatMessage(data.name, data.message, data.client_id === CLIENT_ID);
+                    break;
+                case "join-request":
+                    if (IS_HOST) showJoinRequest(data.client_id, data.name);
+                    break;
+                case "join-response":
+                    if (data.target === CLIENT_ID) handleJoinResponse(data.accepted);
                     break;
             }
         };

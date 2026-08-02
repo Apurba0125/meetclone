@@ -4,6 +4,8 @@ body {
     font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
 }
 
+.hidden { display: none !important; }
+
 /* ===================== HOME PAGE ===================== */
 .home-body {
     background: #ffffff;
@@ -144,6 +146,9 @@ body {
     padding: 32px;
     border-radius: 12px;
     width: 380px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
     text-align: center;
 }
 
@@ -184,6 +189,87 @@ body {
     font-size: 13px;
     color: #9aa0a6;
 }
+
+/* Password field (guest) */
+.password-field { margin-bottom: 16px; text-align: left; }
+
+#password-input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 6px;
+    border: 1px solid #5f6368;
+    background: #202124;
+    color: #fff;
+    font-size: 15px;
+}
+
+.field-error { color: #f28b82; font-size: 13px; margin-top: 6px; }
+.field-hint { color: #81c995; font-size: 13px; margin-top: 8px; }
+
+/* Host meeting settings panel */
+.host-settings {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #3c4043;
+    text-align: left;
+}
+
+.host-settings h3 {
+    font-size: 14px;
+    font-weight: 500;
+    color: #9aa0a6;
+    margin-bottom: 12px;
+}
+
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    margin-bottom: 12px;
+    cursor: pointer;
+}
+
+.checkbox-row input { width: 16px; height: 16px; }
+
+#host-password-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #5f6368;
+    background: #202124;
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+/* Join request notifications (host) */
+.join-requests {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 320px;
+    max-width: 90vw;
+}
+
+.join-request-row {
+    background: #292a2d;
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.4);
+    font-size: 14px;
+}
+
+.join-request-row span { flex: 1; }
 
 /* Call screen layout */
 .call-screen {
@@ -334,3 +420,78 @@ body {
 }
 
 .btn.small { padding: 10px 16px; font-size: 14px; }
+
+/* ===================== RESPONSIVE ===================== */
+
+/* Tablets and small laptops */
+@media (max-width: 900px) {
+    .home-main {
+        padding: 32px 24px;
+        justify-content: center;
+    }
+    .home-right { display: none; }
+
+    .chat-panel {
+        width: min(320px, 80vw);
+    }
+}
+
+/* Phones */
+@media (max-width: 600px) {
+    .home-header { padding: 16px 20px; }
+
+    .home-main {
+        padding: 24px 20px;
+        text-align: center;
+        justify-content: flex-start;
+    }
+
+    .home-left h1 { font-size: 28px; }
+    .home-left p { font-size: 15px; margin-bottom: 24px; }
+
+    .home-actions { flex-direction: column; align-items: stretch; }
+    .inline-form { flex-direction: column; }
+    .join-form input { width: 100%; }
+
+    .prejoin-card { padding: 20px; }
+    #preview-video { height: 160px; }
+
+    .call-header { padding: 10px 14px; }
+    .call-header .call-title { font-size: 13px; }
+    #copy-link-btn { padding: 8px 12px; font-size: 13px; }
+
+    .video-grid {
+        grid-template-columns: 1fr;
+        padding: 0 8px;
+        gap: 8px;
+    }
+
+    .call-toolbar {
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 10px;
+    }
+
+    .icon-btn { width: 46px; height: 46px; font-size: 18px; }
+    .icon-btn.leave { width: 60px; }
+
+    /* Chat becomes a full-screen overlay instead of a side panel */
+    .chat-panel {
+        width: 100%;
+        max-width: none;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        border-left: none;
+        z-index: 30;
+    }
+
+    .join-requests { width: 92vw; }
+}
+
+/* Very small phones */
+@media (max-width: 380px) {
+    .icon-btn { width: 42px; height: 42px; font-size: 16px; }
+    .icon-btn.small { width: 28px; height: 28px; }
+}
