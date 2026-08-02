@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeetClone</title>
+    <link rel="stylesheet" href="{% static 'rooms/css/style.css' %}">
+</head>
+<body class="home-body">
+    <header class="home-header">
+        <div class="brand">
+            <span class="brand-dot"></span>
+            <span>MeetClone</span>
+        </div>
+    </header>
+
+    <main class="home-main">
+        <div class="home-left">
+            <h1>Video calls, built for your dev project.</h1>
+            <p>Create a room and share the link, or join with a code — powered by Django Channels and WebRTC.</p>
+
+            <div class="home-actions">
+                <form method="post" class="inline-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="new">
+                    <button type="submit" class="btn btn-primary">+ New meeting</button>
+                </form>
+
+                <form method="post" class="inline-form join-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="join">
+                    <input type="text" name="room_code" placeholder="Enter a code" required>
+                    <button type="submit" class="btn btn-secondary">Join</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="home-right">
+            <div class="illustration">
+                <div class="tile"></div>
+                <div class="tile"></div>
+                <div class="tile"></div>
+                <div class="tile"></div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

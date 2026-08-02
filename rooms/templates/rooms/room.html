@@ -1,0 +1,65 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting {{ room_code }} - MeetClone</title>
+    <link rel="stylesheet" href="{% static 'rooms/css/style.css' %}">
+</head>
+<body class="room-body">
+
+    <!-- Pre-join screen -->
+    <div id="prejoin-screen" class="prejoin-screen">
+        <div class="prejoin-card">
+            <h2>Ready to join?</h2>
+            <video id="preview-video" autoplay playsinline muted></video>
+            <div class="prejoin-controls">
+                <button id="preview-mic-btn" class="icon-btn active">🎤</button>
+                <button id="preview-cam-btn" class="icon-btn active">📷</button>
+            </div>
+            <input type="text" id="display-name-input" placeholder="Your name" value="{{ display_name }}">
+            <button id="join-btn" class="btn btn-primary join-btn">Join now</button>
+            <p class="room-code-hint">Room code: <strong>{{ room_code }}</strong></p>
+        </div>
+    </div>
+
+    <!-- Main call screen -->
+    <div id="call-screen" class="call-screen" style="display:none;">
+        <header class="call-header">
+            <div class="call-title">
+                <span>{{ room_code }}</span>
+            </div>
+            <button id="copy-link-btn" class="btn btn-ghost">Copy invite link</button>
+        </header>
+
+        <main id="video-grid" class="video-grid"></main>
+
+        <aside id="chat-panel" class="chat-panel hidden">
+            <div class="chat-header">
+                <span>In-call messages</span>
+                <button id="close-chat-btn" class="icon-btn small">✕</button>
+            </div>
+            <div id="chat-messages" class="chat-messages"></div>
+            <form id="chat-form" class="chat-form">
+                <input type="text" id="chat-input" placeholder="Send a message" autocomplete="off">
+                <button type="submit" class="btn btn-primary small">Send</button>
+            </form>
+        </aside>
+
+        <footer class="call-toolbar">
+            <button id="mic-btn" class="icon-btn active" title="Toggle microphone">🎤</button>
+            <button id="cam-btn" class="icon-btn active" title="Toggle camera">📷</button>
+            <button id="screenshare-btn" class="icon-btn" title="Share screen">🖥️</button>
+            <button id="chat-btn" class="icon-btn" title="Chat">💬</button>
+            <button id="leave-btn" class="icon-btn leave" title="Leave call">📞</button>
+        </footer>
+    </div>
+
+    <script>
+        window.ROOM_CODE = "{{ room_code }}";
+        window.WS_SCHEME = window.location.protocol === "https:" ? "wss" : "ws";
+    </script>
+    <script src="{% static 'rooms/js/room.js' %}"></script>
+</body>
+</html>
