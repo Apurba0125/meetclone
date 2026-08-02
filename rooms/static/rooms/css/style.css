@@ -129,12 +129,14 @@ body {
     background: #202124;
     color: #fff;
     height: 100vh;
+    height: 100dvh; /* mobile-safe viewport height (excludes address bar) */
     overflow: hidden;
 }
 
 /* Pre-join screen */
 .prejoin-screen {
     height: 100vh;
+    height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -274,6 +276,7 @@ body {
 /* Call screen layout */
 .call-screen {
     height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
 }
@@ -346,6 +349,8 @@ body {
     align-items: center;
     gap: 16px;
     padding: 18px;
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+    flex-shrink: 0;
 }
 
 .icon-btn {
@@ -467,9 +472,11 @@ body {
     }
 
     .call-toolbar {
-        flex-wrap: wrap;
-        gap: 10px;
+        flex-wrap: nowrap;
+        gap: 8px;
         padding: 10px;
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+        overflow-x: auto;
     }
 
     .icon-btn { width: 46px; height: 46px; font-size: 18px; }
