@@ -252,6 +252,37 @@
         if (tile) tile.remove();
     }
 
+    // Some browsers (notably iOS Safari) silently refuse to autoplay a
+    // stream with unmuted audio and never surface an error - the video just
+    // stays black. Try unmuted playback; if it's blocked, fall back to muted
+    // autoplay (always allowed) and let the user tap to unmute.
+    function attachRemoteStream(peerId, stream) {
+        const videoEl = peers[peerId].videoEl;
+        videoEl.srcObject = stream;
+        videoEl.play().catch(() => {
+            videoEl.muted = true;
+            videoEl.play().catch(err => console.warn(`[peer ${peerId}] playback blocked`, err));
+            addUnmuteButton(peerId);
+        });
+    }
+
+    function addUnmuteButton(peerId) {
+        const tile = document.getElementById(`tile-${peerId}`);
+        if (!tile || tile.querySelector(".unmute-btn")) return;
+        const btn = document.createElement("button");
+        btn.className = "unmute-btn";
+        btn.textContent = "🔇 Tap to unmute";
+        btn.addEventListener("click", () => {
+            const videoEl = peers[peerId] && peers[peerId].videoEl;
+            if (videoEl) {
+                videoEl.muted = false;
+                videoEl.play().catch(() => {});
+            }
+            btn.remove();
+        });
+        tile.appendChild(btn);
+    }
+
     // ---------- WebSocket signaling ----------
     let leavingCall = false;
     let reconnectAttempts = 0;
@@ -342,7 +373,7 @@
             if (!peers[peerId].videoEl) {
                 peers[peerId].videoEl = makeTile(peerId, false, peers[peerId].name);
             }
-            peers[peerId].videoEl.srcObject = event.streams[0];
+            attachRemoteStream(peerId, event.streams[0]);
         };
 
         return pc;
