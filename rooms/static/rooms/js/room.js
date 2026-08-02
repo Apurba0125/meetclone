@@ -6,6 +6,24 @@
     const ICE_SERVERS = [
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" },
+        // Public TURN (Open Relay Project) - needed when peers are behind
+        // symmetric NAT / restrictive firewalls where STUN alone can't
+        // establish a direct connection.
+        {
+            urls: "turn:global.relay.metered.ca:80",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+        },
+        {
+            urls: "turn:global.relay.metered.ca:443",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+        },
+        {
+            urls: "turn:global.relay.metered.ca:443?transport=tcp",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+        },
     ];
 
     let localStream = null;
@@ -167,6 +185,10 @@
                     candidate: event.candidate,
                 });
             }
+        };
+
+        pc.oniceconnectionstatechange = () => {
+            console.log(`[peer ${peerId}] ICE connection state: ${pc.iceConnectionState}`);
         };
 
         pc.ontrack = (event) => {
